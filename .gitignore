@@ -1,0 +1,7 @@
+documents/
+chromadb/
+figures/
+
+**/__pycache__/
+
+venv/
