@@ -2,10 +2,8 @@ import torch
 from functools import partial
 from typing import List
 from unstructured.documents.elements import Element
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnablePick, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.chat_models.ollama import ChatOllama
-from langchain_community.chat_models.openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 # import torch
@@ -13,19 +11,20 @@ from transformers import MarkupLMProcessor, MarkupLMForQuestionAnswering
 
 from .ingest import parse_document_unstructured
 
-p = r"G:\mclarens\confidential docs\015.022887-Liability Preliminary - #1090-11560-56826421.PDF"
-p = r"G:\mclarens\confidential docs\Subsequent Report - Fourth-11560-59366816.PDF"
-
 # Token codec
 processor = MarkupLMProcessor.from_pretrained(
-    "microsoft/markuplm-base-finetuned-websrc", cache_dir="./cache/",
+    # "microsoft/markuplm-base-finetuned-websrc",
+    "microsoft/markuplm-large-finetuned-websrc",
+    cache_dir="./cache/",
 )
 # Language Model
 model = MarkupLMForQuestionAnswering.from_pretrained(
-    "microsoft/markuplm-base-finetuned-websrc", cache_dir="./cache/",
+    # "microsoft/markuplm-base-finetuned-websrc",
+    "microsoft/markuplm-large-finetuned-websrc",
+    cache_dir="./cache/",
 )
 
-chat_model = ChatOllama(model="gemma:2b", base_url="http://hercules.local:11434")
+# chat_model = ChatOllama(model="gemma:2b", base_url="http://hercules.local:11434")
 # chat_model = ChatOpenAI()
 
 def print_me(inputs):
@@ -37,19 +36,30 @@ def print_me(inputs):
 def extract_html_from_elements(elements: List[Element]):
     return [
         e.metadata.text_as_html
-        for e in elements
         if e.metadata.text_as_html is not None
+        else "<p>%s</p>" % e.text
+        for e in elements
     ]
 
 
-def extract_answer_from_html_llm(input) -> str:
+def extract_answer_from_html_llm(input, chat_model) -> str:
     prompt = ChatPromptTemplate.from_template("Find relevant information requested from the context given below. If the query is not found, say 'Not found'.: ```{context}```\n\nQuery: {query}")
     summarize_chain = prompt | chat_model | StrOutputParser()
     return summarize_chain.invoke(input)
 
 
 def extract_answer_from_html(input, processor, model):
-    encoding = processor(input.get("context", ""), questions=input["query"], return_tensors="pt")
+    ctx = input.get("context", [])
+    if isinstance(ctx, str):
+        ctx = [ctx]
+    elif ctx is None:
+        ctx = []
+
+    encoding = processor(
+        '\n'.join(["<!DOCTYPE html><html><head></head><body>", *ctx, "</body></html>"]),
+        questions=input["query"],
+        return_tensors="pt"
+    )
 
     with torch.no_grad():
         outputs = model(**encoding)
@@ -79,15 +89,16 @@ def select_best_tool(query):
 
 def extract_chain(ingested_documents):
     def get_context(query: str):
-        return "\n\n".join(ingested_documents)
+        return ingested_documents[:5]
 
     return (
         # {"tool": RunnableLambda(select_best_tool), "query": RunnablePassthrough()} |
         # RunnableAssign() |
-        {"context": get_context, "query": RunnablePassthrough()} |
-        RunnableLambda(query_engine) |
-        StrOutputParser() |
-        RunnableLambda(str.strip)
+        {"context": get_context, "query": RunnablePassthrough()}
+        | RunnableParallel(
+            answer=RunnableLambda(query_engine) | StrOutputParser() | RunnableLambda(str.strip),
+            context=RunnablePick("context") | RunnableLambda(str).map()
+        )
     )
 
 

@@ -15,8 +15,9 @@ class TestLangchainRAG(BaseTestRAG):
 
     def __call__(self, query, extra_context=None):
         ts = time.time()
-        print(query[:15], end=': ')
+        print(query[:15], '...', end=': ')
         res = self._eval_chain.invoke(query)
         tt = time.time() - ts
-        print(res, "; time: %.2f s" % tt)
-        return {"answer": res, "time_taken": tt}
+        res.update({"time_taken": tt})
+        print(res.get("answer"), "; time: %.2f s" % tt)
+        return res

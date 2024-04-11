@@ -10,4 +10,4 @@ class BaseTestRAG:
         pass
 
     def __call__(self, query: str, extra_context: Optional[str] = None):
-        return {"answer": "Not found", "time_taken": 0.0}
+        return {"answer": "Not found", "context": [], "time_taken": 0.0}

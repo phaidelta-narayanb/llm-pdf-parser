@@ -4,9 +4,7 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
 from langchain.retrievers.multi_vector import MultiVectorRetriever
 from langchain_core.language_models import BaseChatModel
-from langchain_community.chat_models.ollama import ChatOllama
-from langchain_community.chat_models.openai import ChatOpenAI
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnablePick, RunnableLambda
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -22,10 +20,6 @@ from .store import RetrievalStore
 CACHE_DIR = "documents/"
 needs_text_summary = False
 needs_table_summary = False
-
-
-def default_chat_model():
-    return ChatOllama(model="gemma:2b")
 
 
 def print_me(inputs):
@@ -134,10 +128,11 @@ def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
     AI: """
     prompt = ChatPromptTemplate.from_template(template)
 
+    # | RunnableLambda(print_me)
     return (
         {"context": retriever, "question": RunnablePassthrough()}
-        # | RunnableLambda(print_me)
-        | prompt
-        | chat_model
-        | StrOutputParser()
+        | RunnableParallel(
+            answer=prompt | chat_model | StrOutputParser(),
+            context=RunnablePick("context") | RunnableLambda(lambda d: d.page_content).map()
+        )
     )
