@@ -1,5 +1,6 @@
 import argparse
-# from itertools import islice
+from itertools import islice
+from difflib import SequenceMatcher
 import os
 import re
 import traceback
@@ -55,8 +56,19 @@ def get_tests(
     prompts: dict = cfg["prompts"]
 
     def _evaluate_result(prompt, result):
-        print("Evaluate - Result:", result)
-        return {}
+        def _best_similarity(expected: list, answer: str):
+            return max(
+                map(
+                    lambda v: SequenceMatcher(None, v, answer).ratio(),
+                    expected
+                ))
+
+        return {
+            "best_similarity": _best_similarity(
+                prompt.get("expected", []),
+                result.get("answer")
+            )
+        }
 
     def _validate_result(k_id, prompt, result):
         return {
@@ -110,7 +122,7 @@ def main():
                     model_path=re.sub(r"[\[\]\:\*\?\/\\]", ".", str(args.model))
                 )
                 results: pd.DataFrame = pd.DataFrame(
-                    get_tests(c, test_class, test_model)
+                    islice(get_tests(c, test_class, test_model), None)
                 ).set_index("id")
                 results.to_excel(writer, sheet_name=sheet_name[:31])
             except Exception as ex:

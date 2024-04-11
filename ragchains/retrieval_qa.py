@@ -93,7 +93,7 @@ def ingest_process(document_file, store: RetrievalStore, summarizer_model: BaseC
                 continue
             texts.append(txt)
             text_ids.append(txt_id)
-        # vectorstore.add_texts(texts, ids=text_ids)
+        vectorstore.add_texts(texts, ids=text_ids)
 
         # Tables
         table_elements = list(filter(lambda x: isinstance(x, Table), parsed_doc))
@@ -109,6 +109,10 @@ def ingest_process(document_file, store: RetrievalStore, summarizer_model: BaseC
     print("Retriever loading done")
 
     return retriever
+
+
+def format_docs(docs):
+    return "\n\n".join([d.page_content for d in docs])
 
 
 def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
@@ -130,9 +134,10 @@ def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
 
     # | RunnableLambda(print_me)
     return (
-        {"context": retriever, "question": RunnablePassthrough()}
+        {"relevant_docs": retriever, "question": RunnablePassthrough()}
+        | RunnablePassthrough.assign(context=lambda val: format_docs(val['relevant_docs']))
         | RunnableParallel(
             answer=prompt | chat_model | StrOutputParser(),
-            context=RunnablePick("context") | RunnableLambda(lambda d: d.page_content).map()
+            context=RunnablePick("relevant_docs") | RunnableLambda(lambda d: d.page_content).map()
         )
     )
