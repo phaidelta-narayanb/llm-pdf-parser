@@ -1,7 +1,10 @@
 documents/
 chromadb/
 figures/
+cache/
 
 **/__pycache__/
 
 venv/
+
+.env

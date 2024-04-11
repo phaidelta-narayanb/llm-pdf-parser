@@ -1,3 +1,8 @@
+import os
+
+os.environ["TABLE_IMAGE_CROP_PAD"] = "96"
+os.environ["EXTRACT_IMAGE_BLOCK_CROP_HORIZONTAL_PAD"] = "96"
+
 from functools import wraps
 import hashlib
 from os import PathLike
@@ -5,7 +10,6 @@ from pathlib import Path
 import pickle as pkl
 from typing import Optional
 from unstructured.partition.auto import partition
-import store
 
 
 def pickle_cache(f):
@@ -72,7 +76,3 @@ def ingest_document(
     document_file = Path(document_file)
 
     return parse_document_unstructured(document_file, **parser_options)
-
-
-def get_retriever():
-    return store.retriever

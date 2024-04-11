@@ -21,8 +21,8 @@ from difflib import SequenceMatcher
 
 import argparse
 
-from ingest import get_retriever, ingest_document
-from store import id_key
+from .ingest import ingest_document
+from .store import id_key, global_store
 
 
 needs_text_summary = False
@@ -80,7 +80,7 @@ parsed_docs = list(
 # print_docs_stats(parsed_docs)
 
 print("Creating retriever...")
-retriever = get_retriever()
+retriever = global_store.retriever
 
 
 text_elements = list(filter(lambda x: isinstance(x, Text), parsed_docs[0]))
