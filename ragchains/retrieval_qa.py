@@ -131,12 +131,12 @@ def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
     {context}
     ```
     Request: {question}
-    """
+    AI: """
     prompt = ChatPromptTemplate.from_template(template)
 
     return (
-        {"context": lambda q: retriever.get_relevant_documents(q)[:3], "question": RunnablePassthrough()}
-        | RunnableLambda(print_me)
+        {"context": retriever, "question": RunnablePassthrough()}
+        # | RunnableLambda(print_me)
         | prompt
         | chat_model
         | StrOutputParser()
