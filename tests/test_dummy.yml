@@ -1,0 +1,70 @@
+document: "Dummy report.pdf"
+prompts:
+  insured:
+    prompt: "Insured"
+    expected:
+      - "Sample company"
+  type_of_loss:
+    prompt: "Type of loss (eg. Fire, Hurricane, Products Liability)"
+    expected:
+      - "Fire"
+  secondary_loss:
+    prompt: "Secondary Type of loss (eg. Fire by arson or forest fire, Products Liability by self damage, None, Unknown, etc.)"
+    expected:
+      - "Unknown"
+  report_type:
+    prompt: "Report Type (Eg. Preliminary, First, Interim (2nd, 3rd, etc), Final)"
+    expected:
+      - "Preliminary"
+  report_title:
+    prompt: "Report Title"
+    expected:
+      - "Preliminary Report"
+  report_date:
+    prompt: "Report Date"
+    expected:
+      - "April 01, 2024"
+  file_number:
+    prompt: "File Number"
+    expected:
+      - "000. 1111.XY"
+  loss_date:
+    prompt: "Loss Date"
+    expected:
+      - "October 1, 2023"
+  first_contact_date:
+    prompt: "First Contact Date"
+    expected:
+      - "October 13, 2022"
+  site_visit_date:
+    prompt: "Site Visit Date"
+    expected:
+      - "October 18, 2022"
+  first_report_date:
+    prompt: "First Report Date"
+    expected:
+      - "Unknown"
+  estimate:
+    prompt: "Estimate"
+    expected:
+      - "$12345.00"
+  final_claim_paid:
+    prompt: "Final Claim Paid"
+    expected:
+      - "Unknown"
+  date_of_final_settlement_agreed:
+    prompt: "Date Final Settlement Agreed"
+    expected:
+      - "Unknown"
+  date_claim_closed:
+    prompt: "Date Claim Closed"
+    expected:
+      - "Unknown"
+  date_first_payment:
+    prompt: "Date Of First Payment"
+    expected:
+      - "Unknown"
+
+  # "Instruction Date",
+  # "Broker Name",
+  # "Threshold Payments Completed Date",
