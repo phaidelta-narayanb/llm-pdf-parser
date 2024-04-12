@@ -1,0 +1,12 @@
+python-dotenv
+unstructured[pdf]
+langchain
+langchain-core
+openai
+langchain-community
+pandas
+openpyxl
+torch
+transformers
+sentence-transformers
+chromadb
