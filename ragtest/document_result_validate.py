@@ -3,6 +3,7 @@ from itertools import islice
 from difflib import SequenceMatcher
 import os
 import re
+import time
 import traceback
 from typing import Type
 import pandas as pd
@@ -109,9 +110,17 @@ def main():
         exit(1)
 
     print("Using model: %s" % args.model)
+    model_name_clean=re.sub(r"[\[\]\:\*\?\/\\]", ".", str(args.model))
     test_model = get_chat_model(args.model, base_url=args.base_url)
 
-    with pd.ExcelWriter(args.result, mode='w') as writer:
+    save_result_path = args.result.format(
+        timestamp=time.time(),
+        model=model_name_clean
+    )
+    print("Saving results to \"%s\"" % save_result_path)
+
+    with pd.ExcelWriter(save_result_path, mode='w') as writer:
+    # with open(args.result, mode='w', newline='') as writer:
         for i, c in enumerate(args.config):
             print("Testing %s with %s..." % (c, test_class))
             print("-"*15)
@@ -119,7 +128,7 @@ def main():
                 sheet_name = "{model_path}_{config_idx}".format(
                     config_file=os.path.basename(c),
                     config_idx=i,
-                    model_path=re.sub(r"[\[\]\:\*\?\/\\]", ".", str(args.model))
+                    model_path=model_name_clean
                 )
                 results: pd.DataFrame = pd.DataFrame(
                     islice(get_tests(c, test_class, test_model), None)
