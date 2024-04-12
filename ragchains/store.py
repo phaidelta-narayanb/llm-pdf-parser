@@ -19,7 +19,7 @@ class RetrievalStore:
             vectorstore = Chroma(
                 collection_name="documents",
                 embedding_function=HuggingFaceEmbeddings(),
-                persist_directory=os.path.join(CHROMA_STORE, "documents/")
+                persist_directory=os.path.join(CHROMA_STORE, "documents/", uuid.uuid4().hex)
             )
         self._vectorstore = vectorstore
 

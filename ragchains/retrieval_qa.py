@@ -1,4 +1,5 @@
 import hashlib
+from typing import List
 import uuid
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.vectorstores import VectorStore
@@ -88,11 +89,19 @@ def ingest_process(document_file, store: RetrievalStore, summarizer_model: BaseC
         text_elements = list(filter(lambda x: isinstance(x, Text), parsed_doc))
         texts = []
         text_ids = []  # [str(uuid.UUID(bytes=hashlib.sha256(t.encode()).digest()[:16])) for t in texts]
-        for txt, txt_id in zip(map(str, text_elements), map(lambda e: e.id, text_elements)):
+        text_metadatas = []
+        for txt_elem in text_elements:
+            txt_id = txt_elem.id
             if txt_id in text_ids:
                 continue
+            txt = str(txt_elem)
+            m = txt_elem.metadata
             texts.append(txt)
             text_ids.append(txt_id)
+            text_metadatas.append({
+                "page_number": m.page_number,
+                "file": m.filename
+            })
         vectorstore.add_texts(texts, ids=text_ids)
 
         # Tables
@@ -111,18 +120,24 @@ def ingest_process(document_file, store: RetrievalStore, summarizer_model: BaseC
     return retriever
 
 
-def format_docs(docs):
-    return "\n\n".join([d.page_content for d in docs])
+def format_docs(docs: List[Document]):
+    return "\n\n".join(["Page number: %s\n%s" % (d.metadata.get("page_number", "Unknown"), d.page_content) for d in docs])
 
 
 def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
-    template = """Fetch requested information in the following context and answer directly, without explanations. If not found, say "Don't know".
+    template = """Fetch requested information in the following context and answer directly, without explanations. If not found, say "Unknown". If field is present but blank or no value, mention "N/A".
     Example:
         Context: ```The cost was $22.4 and there were 10 employees.```
         Request: How much was the cost?
         AI: Cost: $22.4
         Request: How many employees?
         AI: Employees: 10
+
+    Tips:
+    - The context is like a letter, with a Date mentioned at the beginning of page 1. This can be used as the report date.
+    - If the report is not "first report", then "first report date" should be "N/A" as this can't be known.
+
+    Start.
 
     Context:
     ```
@@ -138,6 +153,7 @@ def retrieval_chain(retriever: BaseRetriever, chat_model: BaseChatModel):
         | RunnablePassthrough.assign(context=lambda val: format_docs(val['relevant_docs']))
         | RunnableParallel(
             answer=prompt | chat_model | StrOutputParser(),
-            context=RunnablePick("relevant_docs") | RunnableLambda(lambda d: d.page_content).map()
+            context=RunnablePick("relevant_docs") | RunnableLambda(lambda d: d.page_content).map(),
+            prompt=prompt
         )
     )
