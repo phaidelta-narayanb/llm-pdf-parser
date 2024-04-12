@@ -57,9 +57,9 @@ def parse_document_unstructured(document_file: Path, **options):
         # Chunking params to aggregate text blocks
         # Attempt to create a new chunk 3800 chars
         # Attempt to keep chunks > 2000 chars
-        max_characters=480,  # 4000,
-        new_after_n_chars=400,  # 3800,
-        combine_text_under_n_chars=380,  # 2000,
+        max_characters=2048,  # 4000,
+        new_after_n_chars=2000,  # 3800,
+        combine_text_under_n_chars=1800,  # 2000,
         include_page_breaks=True,
     )
 
