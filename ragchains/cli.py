@@ -71,7 +71,7 @@ def main():
 
     LOG.info("Starting ingest process of \"%s\"...", args.document)
     store = RetrievalStore(
-        k=args.n
+        k=args.document_count
     )
     retriever = ingest_process(
         args.document,
