@@ -13,7 +13,10 @@ CHROMA_STORE = "./chromadb/"
 
 
 class RetrievalStore:
-    def __init__(self, vectorstore: VectorStore = None):
+    def __init__(self,
+                 vectorstore: VectorStore = None,
+                 search_type: str = "similarity", **retriever_options):
+        self._retriever_options = {}
         if vectorstore is None:
             # The vectorstore to use to index the child chunks
             vectorstore = Chroma(
@@ -22,6 +25,8 @@ class RetrievalStore:
                 # persist_directory=os.path.join(CHROMA_STORE, "documents/", uuid.uuid4().hex)
             )
         self._vectorstore = vectorstore
+        self._search_type = search_type
+        self._retriever_options.update(retriever_options)
 
     @property
     def vectorstore(self):
@@ -29,7 +34,7 @@ class RetrievalStore:
 
     @property
     def retriever(self):
-        return self._vectorstore.as_retriever()
+        return self._vectorstore.as_retriever(search_type=self._search_type, search_kwargs=self._retriever_options)
 
 
 global_store = RetrievalStore()

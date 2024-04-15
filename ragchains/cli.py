@@ -1,6 +1,7 @@
 
 import argparse
 import logging
+import re
 import typing
 
 
@@ -18,7 +19,11 @@ logging.basicConfig(
 LOG = logging.getLogger(__name__)
 
 
-def process_prompt(retriever: BaseRetriever, prompt: str, auto_pause: bool = False):
+def process_prompt(retriever: BaseRetriever, prompt: str):
+    # Show "Next document" prompt if prompt ends with '..'
+    auto_pause = prompt[-2:] == ".."
+    prompt = re.sub(r"(\.\.)$", '', prompt)
+
     results = retriever.invoke(prompt)
     LOG.info("Got %d documents.", len(results))
     for i, doc in enumerate(results):
@@ -30,7 +35,10 @@ def process_prompt(retriever: BaseRetriever, prompt: str, auto_pause: bool = Fal
         print(doc.page_content)
         print()
         if auto_pause:
-            input("Press <Enter> to show next.")
+            k = input("Press <Enter> to show next, 'q' and <Enter> to skip.")
+            if k.lower() == 'q':
+                break
+
 
 def repl(retriever: BaseRetriever):
     print("Enter 'q', 'exit' or press Ctrl+C to exit.")
@@ -39,12 +47,11 @@ def repl(retriever: BaseRetriever):
             prompt = input("> ")
             if prompt.lower() in ["q", "exit"]:
                 break
-            auto_pause = prompt[-2:] == ".."
-            process_prompt(retriever, prompt, auto_pause)
+            process_prompt(retriever, prompt)
         except KeyboardInterrupt:
             print()
             break
-        except:
+        except Exception:
             LOG.exception("Exception while processing prompt:")
     LOG.info("Stopping...")
 
@@ -52,19 +59,27 @@ def repl(retriever: BaseRetriever):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("document", help="Document file to process")
-    parser.add_argument("-q", "--cache-dir", required=False, default=None)
+    parser.add_argument("-c", "--cache-dir", required=False, default=None)
+    parser.add_argument("-q", "--query", help="Run a query and exit", required=False, default=None)
+    parser.add_argument("-n", "--document-count", help="Always return at most this number of results", required=False, default=3)
 
     args = parser.parse_args()
 
-    LOG.info("Loading dependencies")    
+    LOG.info("Loading dependencies")
     from .store import RetrievalStore
     from .retrieval_qa import ingest_process
 
     LOG.info("Starting ingest process of \"%s\"...", args.document)
-    store = RetrievalStore()
+    store = RetrievalStore(
+        k=args.n
+    )
     retriever = ingest_process(
         args.document,
         store,
         cache_directory=args.cache_dir
     )
-    repl(retriever)
+
+    if args.query is not None:
+        process_prompt(retriever, args.query)
+    else:
+        repl(retriever)
