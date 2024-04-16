@@ -56,14 +56,27 @@ def repl(retriever: BaseRetriever):
     LOG.info("Stopping...")
 
 
+def check_positive(value):
+    try:
+        value = int(value)
+        if value <= 0:
+            raise argparse.ArgumentTypeError("{} is not a positive integer".format(value))
+    except ValueError:
+        raise Exception("{} is not an integer".format(value))
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("document", help="Document file to process")
     parser.add_argument("-c", "--cache-dir", required=False, default=None)
     parser.add_argument("-q", "--query", help="Run a query and exit", required=False, default=None)
-    parser.add_argument("-n", "--document-count", help="Always return at most this number of results", required=False, default=3)
+    parser.add_argument("-n", "--document-count", type=check_positive, help="Always return at most this number of results (must be >0)", required=False, default=3)
 
     args = parser.parse_args()
+
+    if args.document_count is not None:
+
 
     LOG.info("Loading dependencies")
     from .store import RetrievalStore
