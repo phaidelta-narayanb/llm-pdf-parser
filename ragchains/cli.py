@@ -75,9 +75,6 @@ def main():
 
     args = parser.parse_args()
 
-    if args.document_count is not None:
-
-
     LOG.info("Loading dependencies")
     from .store import RetrievalStore
     from .retrieval_qa import ingest_process
